@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -19,6 +20,7 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
+        unique: true,
         trim: true,
         lowercase: true,
         validate: (value) => {
@@ -34,8 +36,35 @@ const userSchema = new mongoose.Schema({
             if (value.length < 6 || value.includes('password')) throw new Error('Invalid Password');
         }  
     },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 });
 
+userSchema.methods.toJSON = function() {
+    const user = this;
+    const userObj = user.toObject();
+
+    delete userObj.tokens;
+    delete userObj.password;
+
+    return userObj;
+}
+
+// Instance Methods
+userSchema.methods.generateAuthToken = async function() {
+    const user = this;
+    const token = jwt.sign({ _id: user._id.toString() }, 'thisismynewcourse');
+
+    user.tokens = user.tokens.concat({ token });
+    await user.save();
+    return token;
+}
+
+// static method also known as Model Methods
 userSchema.statics.findByCredentials = async (email, password) => {
     const user = await User.findOne({ email });
     if (!user) throw new Error('Unable to login');
@@ -46,7 +75,6 @@ userSchema.statics.findByCredentials = async (email, password) => {
 
 // hash the plain text password before saving
 userSchema.pre('save', async function(next) {
-    console.log('calling pre before save');
     const user = this;
     if(user.isModified('password')) {
         const hashpass = await bcrypt.hash(user.password, 8);
