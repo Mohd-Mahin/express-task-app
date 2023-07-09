@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const Task = require('./task');
 const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema({
@@ -42,7 +43,15 @@ const userSchema = new mongoose.Schema({
             required: true
         }
     }]
+}, {
+    timestamps: true
 });
+
+userSchema.virtual('tasks', {
+    ref: 'Task',
+    localField: '_id',
+    foreignField: 'author',
+})
 
 userSchema.methods.toJSON = function() {
     const user = this;
@@ -76,10 +85,20 @@ userSchema.statics.findByCredentials = async (email, password) => {
 // hash the plain text password before saving
 userSchema.pre('save', async function(next) {
     const user = this;
+    console.log('working... save')
     if(user.isModified('password')) {
         const hashpass = await bcrypt.hash(user.password, 8);
         user.password = hashpass
     }
+    next();
+});
+
+// middleware for deleting tasks with user
+userSchema.pre('deleteOne', {document: true, query: false } ,async function(next) {
+    const author = this._id;
+    await Task.deleteMany({
+        author
+    });
     next();
 })
 

@@ -7,17 +7,6 @@ router.get('/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
-router.get('/:id', async (req, res) => {
-    const { id } = req.params || {};
-    try {
-        const user = await User.findById(id);
-        if (!user) res.status(404).send('No user found...');
-        res.send(user);
-    } catch (error) {
-        res.status(500).send('Something went wrong...');
-    }
-});
-
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -81,7 +70,6 @@ router.patch('/me', auth, async(req, res) => {
         const user = req.user;
         updates.forEach(update => user[update] = req.body[update]);
         await user.save();
-        console.log(user);
         res.send(user);
     } catch (error) {
         res.status(400).send(error);
