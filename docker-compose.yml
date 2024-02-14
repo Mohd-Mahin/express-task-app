@@ -1,4 +1,4 @@
-#docker exec -it mongo-container mongosh -u root -p root
+#docker exec -it <container-name> mongosh -u root -p root
 version: "3.8"
 services:
   mongodb:
