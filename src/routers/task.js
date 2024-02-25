@@ -5,20 +5,29 @@ const { default: mongoose } = require("mongoose");
 const router = new express.Router();
 
 // get all tasks
+// Filtering -> GET /tasks?completed=true
+// Pagination -> GET/tasks?timit=10&skip=0 (first page) limit=10&skip=10 (second page) limit=10&skip=20(third page)
+// Sorting -> GET/tasks?sortBy=createdAt:desc(descending order -> -1) | createdAt:asc(ascending -> 1)
 router.get("/", auth, async (req, res) => {
   const { _id } = req.user;
-  const { completed, limit, skip } = req.query;
+  const { completed, limit, skip, sortBy } = req.query;
 
   const match = {};
+  let sort = {};
   if (completed) {
     match["completed"] = completed === "true" ? true : false;
+  }
+
+  if (sortBy) {
+    const [field, sortOrder] = sortBy.split(":");
+    sort[field] = sortOrder === "desc" ? -1 : 1;
   }
 
   try {
     await req.user.populate({
       path: "tasks",
       options: {
-        // sort: { createdAt: -1 },
+        sort,
         limit: parseInt(limit),
         skip: parseInt(skip),
       },

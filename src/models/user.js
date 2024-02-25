@@ -46,24 +46,57 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    avatar: {
+      type: Buffer,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// mapping => localField(User) => ForeignField(Task|author) || Current Schema localField should match other field key. (User._id == Task.author)
 userSchema.virtual("tasks", {
   ref: "Task",
   localField: "_id",
   foreignField: "author",
 });
 
+// Instance Methods - Method [1]
+userSchema.methods.getPublicProfile = function () {
+  const user = this;
+  const userObject = user.toObject();
+
+  delete userObject.tokens;
+  delete userObject.password;
+
+  return userObject;
+};
+
+// Instance Methods - Method [2]
+/* when JSON.stringify method is called, toJSON() method is also called
+const obj = {
+    name: 'mahin',
+    age: 30,
+    gender: 'male',
+    speak() {
+        console.log(this.name, 'name');  
+    },
+    toJSON() {
+        return {
+            name: this.name,
+            age: this.age
+        }
+    }
+  }
+*/
 userSchema.methods.toJSON = function () {
   const user = this;
   const userObj = user.toObject();
 
   delete userObj.tokens;
   delete userObj.password;
+  delete userObj.avatar;
 
   return userObj;
 };
